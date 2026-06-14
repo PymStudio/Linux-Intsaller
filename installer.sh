@@ -102,104 +102,65 @@ display_line() {
     printf "  ${DIM}%3d${RESET}  ${color}%-8s${RESET} ${BOLD}%-25s${RESET} ${DIM}%s${RESET}\n" "$i" "$src" "$name" "$desc_short"
 }
 
-live_search() {
-    local keyword=$1
-    local tmpfile=$2
-    : > "$tmpfile"
+do_search() {
+    local keyword
+    echo -ne "  ${CYAN}搜索关键词:${RESET} "
+    read -r keyword
+    [ -z "$keyword" ] && return
+
+    local tmpfile=$(mktemp)
     local count=0
 
-    if [ ${#keyword} -ge 1 ]; then
-        while IFS='|' read -r src name desc; do
-            ((count++))
-            echo "$src|$name|$desc" >> "$tmpfile"
-        done < <(search_apt "$keyword" 2>/dev/null)
-        while IFS='|' read -r src name desc; do
-            ((count++))
-            echo "$src|$name|$desc" >> "$tmpfile"
-        done < <(search_snap "$keyword" 2>/dev/null)
-        while IFS='|' read -r src name desc; do
-            ((count++))
-            echo "$src|$name|$desc" >> "$tmpfile"
-        done < <(search_flatpak "$keyword" 2>/dev/null)
+    echo ""
+    echo -e "  ${BOLD}搜索: ${keyword}${RESET}\n"
+
+    echo -e "  ${DIM}────────────────────────────────────────────────────────────────────${RESET}"
+    printf "  ${DIM}%-3s  %-8s %-25s %s${RESET}\n" "#" "来源" "包名" "描述"
+    echo -e "  ${DIM}────────────────────────────────────────────────────────────────────${RESET}"
+
+    echo -e "  ${DIM}▸ 搜索 apt ...${RESET}"
+    while IFS='|' read -r src name desc; do
+        ((count++))
+        echo "$src|$name|$desc" >> "$tmpfile"
+        display_line "$count" "$src" "$name" "$desc"
+    done < <(search_apt "$keyword")
+    echo -e "\r  ${GREEN}✓ apt${RESET}       ${DIM}(${count} 条)${RESET}              "
+
+    local snap_start=$count
+    echo -e "  ${DIM}▸ 搜索 snap ...${RESET}"
+    while IFS='|' read -r src name desc; do
+        ((count++))
+        echo "$src|$name|$desc" >> "$tmpfile"
+        display_line "$count" "$src" "$name" "$desc"
+    done < <(search_snap "$keyword")
+    echo -e "\r  ${GREEN}✓ snap${RESET}      ${DIM}($((count - snap_start)) 条)${RESET}              "
+
+    local fp_start=$count
+    echo -e "  ${DIM}▸ 搜索 flatpak ...${RESET}"
+    while IFS='|' read -r src name desc; do
+        ((count++))
+        echo "$src|$name|$desc" >> "$tmpfile"
+        display_line "$count" "$src" "$name" "$desc"
+    done < <(search_flatpak "$keyword")
+    echo -e "\r  ${GREEN}✓ flatpak${RESET}   ${DIM}($((count - fp_start)) 条)${RESET}              "
+
+    local total=$count
+    echo -e "\n  ${DIM}────────────────────────────────────────────────────────────────────${RESET}"
+    echo -e "  ${BOLD}共 ${total} 条结果${RESET}\n"
+
+    if [ "$total" -eq 0 ]; then
+        rm -f "$tmpfile"
+        return
     fi
-    echo "$count"
-}
 
-do_search() {
-    local keyword=""
-    local tmpfile=$(mktemp)
-
-    clear_screen
-    echo -e "  ${BOLD}实时搜索${RESET}  ${DIM}(输入即搜索，回车确认，退格删除)${RESET}\n"
-
-    while true; do
-        echo -e "\r  ${CYAN}🔍${RESET} ${BOLD}${keyword}_ ${RESET}                    "
-        echo -e "  ${DIM}────────────────────────────────────────────────────────────────────${RESET}"
-
-        if [ ${#keyword} -ge 1 ]; then
-            local total=$(live_search "$keyword" "$tmpfile")
-            if [ "$total" -gt 0 ]; then
-                printf "  ${DIM}%-3s  %-8s %-25s %s${RESET}\n" "#" "来源" "包名" "描述"
-                echo -e "  ${DIM}────────────────────────────────────────────────────────────────────${RESET}"
-                local i=0
-                while IFS='|' read -r src name desc; do
-                    ((i++))
-                    [ "$i" -gt 15 ] && echo -e "  ${DIM}... 还有 $((total - 15)) 条，回车查看更多${RESET}" && break
-                    local color="$GREEN"
-                    [ "$src" = "snap" ] && color="$YELLOW"
-                    [ "$src" = "flatpak" ] && color="$CYAN"
-                    local desc_short="${desc:0:38}"
-                    [ ${#desc} -gt 38 ] && desc_short="${desc_short}..."
-                    printf "  ${DIM}%3d${RESET}  ${color}%-8s${RESET} ${BOLD}%-25s${RESET} ${DIM}%s${RESET}\n" "$i" "$src" "$name" "$desc_short"
-                done < "$tmpfile"
-                echo -e "  ${DIM}────────────────────────────────────────────────────────────────────${RESET}"
-                echo -e "  ${DIM}共 ${total} 条  输入数字安装  回车确认关键词  ESC退出${RESET}"
-            else
-                echo -e "  ${DIM}未找到结果${RESET}"
-                echo -e "  ${DIM}────────────────────────────────────────────────────────────────────${RESET}"
-                echo -e "  ${DIM}ESC退出${RESET}"
-            fi
-        else
-            echo -e "  ${DIM}输入关键词开始搜索...${RESET}"
-            echo -e "  ${DIM}────────────────────────────────────────────────────────────────────${RESET}"
-            echo -e "  ${DIM}ESC退出${RESET}"
-        fi
-
-        local old_tty=$(stty -g 2>/dev/null)
-        stty raw -echo 2>/dev/null
-        local c=$(dd bs=1 count=1 2>/dev/null)
-        stty "$old_tty" 2>/dev/null
-
-        if [ "$c" = $'\x1b' ]; then
-            break
-        elif [ "$c" = $'\x0a' ] || [ "$c" = $'\x0d' ]; then
-            if [ ${#keyword} -ge 1 ]; then
-                local total=$(wc -l < "$tmpfile" 2>/dev/null || echo 0)
-                if [ "$total" -gt 0 ]; then
-                    show_paged_results "$tmpfile" "$keyword"
-                fi
-            fi
-        elif [ "$c" = $'\x7f' ] || [ "$c" = $'\x08' ]; then
-            keyword="${keyword%?}"
-        elif [ -n "$c" ]; then
-            keyword="${keyword}${c}"
-        fi
-    done
-
-    rm -f "$tmpfile"
-}
-
-show_paged_results() {
-    local tmpfile=$1
-    local keyword=$2
-    local total=$(wc -l < "$tmpfile")
     local page_size=20
     local current_page=1
     local total_pages=$(( (total + page_size - 1) / page_size ))
 
-    while true; do
-        local start=$(( (current_page - 1) * page_size + 1 ))
-        local end=$(( current_page * page_size ))
+    show_page() {
+        local page=$1
+        local start=$(( (page - 1) * page_size + 1 ))
+        local end=$(( page * page_size ))
         [ "$end" -gt "$total" ] && end=$total
 
         clear_screen
@@ -213,16 +174,15 @@ show_paged_results() {
             ((i++))
             [ "$i" -lt "$start" ] && continue
             [ "$i" -gt "$end" ] && break
-            local color="$GREEN"
-            [ "$src" = "snap" ] && color="$YELLOW"
-            [ "$src" = "flatpak" ] && color="$CYAN"
-            local desc_short="${desc:0:38}"
-            [ ${#desc} -gt 38 ] && desc_short="${desc_short}..."
-            printf "  ${DIM}%3d${RESET}  ${color}%-8s${RESET} ${BOLD}%-25s${RESET} ${DIM}%s${RESET}\n" "$i" "$src" "$name" "$desc_short"
+            display_line "$i" "$src" "$name" "$desc"
         done < "$tmpfile"
 
         echo -e "  ${DIM}────────────────────────────────────────────────────────────────────${RESET}"
-        echo -e "  ${DIM}第 ${current_page}/${total_pages} 页${RESET}"
+        echo -e "  ${DIM}第 ${page}/${total_pages} 页  共 ${total} 条${RESET}"
+    }
+
+    while true; do
+        show_page $current_page
         echo ""
         echo -e "  ${GREEN}n${RESET}=下一页 ${GREEN}p${RESET}=上一页 ${GREEN}数字${RESET}=安装 ${RED}q${RESET}=返回"
         echo -ne "  ${BOLD}❯${RESET} "
@@ -255,6 +215,8 @@ show_paged_results() {
                 ;;
         esac
     done
+
+    rm -f "$tmpfile"
 }
 
 test_mirrors() {
