@@ -11,32 +11,7 @@ Ubuntu/Debian 软件安装器，一键搜索、安装、换源。
 - **一键装机** - 基础工具/开发环境/Docker 等
 - **Wine 支持** - 运行 Windows .exe 文件（含兼容性提示）
 
-## 版本
-
-| 版本 | 界面 | 依赖 |
-|------|------|------|
-| v0.1 | 终端 (Shell) | bash, curl |
-| v0.2 | 图形界面 (PyQt6) | Python3, PyQt6, requests |
-
 ## 使用方法
-
-### 安装 deb 包 (推荐)
-
-```bash
-# 下载 deb 包
-# 从 GitHub Releases 下载 linux-installer_0.2_all.deb
-
-# 安装
-sudo dpkg -i linux-installer_0.2_all.deb
-
-# 修复依赖（如果需要）
-sudo apt install -f
-
-# 运行
-linux-installer
-```
-
-### Shell 版 (v0.1)
 
 ```bash
 git clone https://github.com/PymStudio/Linux-Intsaller.git
@@ -45,22 +20,13 @@ chmod +x installer.sh
 ./installer.sh
 ```
 
-### GUI 版 (v0.2)
-
-```bash
-git clone https://github.com/PymStudio/Linux-Intsaller.git
-cd Linux-Intsaller
-pip install -r requirements.txt
-python3 gui.py
-```
-
 ## 系统要求
 
 - Ubuntu 20.04+ / Debian 10+
-- Shell 版：bash 4.0+, curl
-- GUI 版：Python 3.8+, PyQt6, requests
+- Bash 4.0+
+- curl（镜像测速需要）
 
-## 功能菜单 (Shell)
+## 功能菜单
 
 ```
 1  搜索软件      同时搜索 apt/snap/flatpak
@@ -70,13 +36,6 @@ python3 gui.py
 5  安装本地包    安装 deb/rpm/AppImage/exe
 0  退出
 ```
-
-## GUI 界面 (v0.2)
-
-- **搜索安装** - 搜索框 + 结果列表 + 安装按钮
-- **镜像源** - 测速 + 切换到最快源
-- **本地包** - 文件选择 + 安装
-- **一键装机** - 预设环境一键安装
 
 ## 本地包安装说明
 

@@ -1,9 +1,0 @@
-[Desktop Entry]
-Name=Linux Installer
-Comment=Ubuntu/Debian 软件安装器
-Exec=/usr/bin/linux-installer
-Icon=linux-installer
-Terminal=false
-Type=Application
-Categories=System;Utility;
-Keywords=install;package;apt;snap;flatpak;
