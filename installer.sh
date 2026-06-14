@@ -339,17 +339,17 @@ one_click_setup() {
     )
 
     echo -e "  ${DIM}────────────────────────────────────────────────────────${RESET}"
-    printf "  ${DIM}%3s  %-14s %-6s %-6s %-6s${RESET}\n" "#" "名称" "apt" "snap" "flatpak"
-    echo -e "  ${DIM}────────────────────────────────────────────────────────${RESET}"
-
-    for env in "${envs[@]}"; do
-        IFS='|' read -r num name apt_pkgs snap_pkgs flat_pkgs <<< "$env"
-        local a="-" s="-" f="-"
-        [ -n "$apt_pkgs" ] && a="✓"
-        [ -n "$snap_pkgs" ] && s="✓"
-        [ -n "$flat_pkgs" ] && f="✓"
-        printf "  ${BOLD}%3s${RESET}  %s   %-6s %-6s %-6s\n" "$num" "$(pad "$name" 14)" "$a" "$s" "$f"
-    done
+    {
+        echo "#|名称|apt|snap|flatpak"
+        for env in "${envs[@]}"; do
+            IFS='|' read -r num name apt_pkgs snap_pkgs flat_pkgs <<< "$env"
+            local a="-" s="-" f="-"
+            [ -n "$apt_pkgs" ] && a="✓"
+            [ -n "$snap_pkgs" ] && s="✓"
+            [ -n "$flat_pkgs" ] && f="✓"
+            echo "${num}|${name}|${a}|${s}|${f}"
+        done
+    } | column -t -s '|'
     echo -e "  ${DIM}────────────────────────────────────────────────────────${RESET}"
 
     echo -ne "  ${BOLD}❯${RESET} "
