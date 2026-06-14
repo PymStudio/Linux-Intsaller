@@ -98,34 +98,111 @@ do_search() {
     read -r keyword
     [ -z "$keyword" ] && return
 
+    local tmpfile=$(mktemp)
+    local count=0
+
     echo ""
     echo -e "  ${BOLD}搜索: ${keyword}${RESET}"
-    echo -e "  ${DIM}────────────────────────────────────────────────────────────────────${RESET}"
-    printf "  ${DIM}%-3s  %-10s %-25s %s${RESET}\n" "#" "来源" "包名" "描述"
-    echo -e "  ${DIM}────────────────────────────────────────────────────────────────────${RESET}"
+    echo -e "  ${DIM}正在搜索 apt ...${RESET}" &
+    search_apt "$keyword" >> "$tmpfile"
+    count=$(wc -l < "$tmpfile")
+    echo -e "\r  ${GREEN}✓ apt${RESET}       (${count} 条)         "
 
-    local count=0
-    local apt_n=0 snap_n=0 fp_n=0
+    echo -e "  ${DIM}正在搜索 snap ...${RESET}"
+    search_snap "$keyword" >> "$tmpfile"
+    local new_count=$(wc -l < "$tmpfile")
+    echo -e "\r  ${GREEN}✓ snap${RESET}      (${new_count} 条)         "
 
-    {
-        search_apt "$keyword"
-        search_snap "$keyword"
-        search_flatpak "$keyword"
-    } | while IFS='|' read -r src name desc; do
-        ((count++))
-        local color="$GREEN"
-        local icon="◆"
-        [ "$src" = "snap" ] && color="$YELLOW" && icon="●"
-        [ "$src" = "flatpak" ] && color="$CYAN" && icon="▲"
-        [ "$src" = "apt" ] && ((apt_n++))
-        [ "$src" = "snap" ] && ((snap_n++))
-        [ "$src" = "flatpak" ] && ((fp_n++))
-        local desc_short="${desc:0:45}"
-        [ ${#desc} -gt 45 ] && desc_short="${desc_short}..."
-        printf "  ${DIM}%3d${RESET}  ${color}%-10s${RESET} ${BOLD}%-25s${RESET} ${DIM}%s${RESET}\n" "$count" "$src" "$name" "$desc_short"
+    echo -e "  ${DIM}正在搜索 flatpak ...${RESET}"
+    search_flatpak "$keyword" >> "$tmpfile"
+    local total=$(wc -l < "$tmpfile")
+    echo -e "\r  ${GREEN}✓ flatpak${RESET}   (${total} 条)         "
+
+    echo -e "\n  ${BOLD}共 ${total} 条结果${RESET}\n"
+
+    if [ "$total" -eq 0 ]; then
+        rm -f "$tmpfile"
+        return
+    fi
+
+    local page_size=20
+    local current_page=1
+    local total_pages=$(( (total + page_size - 1) / page_size ))
+
+    show_page() {
+        local page=$1
+        local start=$(( (page - 1) * page_size + 1 ))
+        local end=$(( page * page_size ))
+        [ "$end" -gt "$total" ] && end=$total
+
+        echo -e "  ${DIM}────────────────────────────────────────────────────────────────────${RESET}"
+        printf "  ${DIM}%-3s  %-8s %-25s %s${RESET}\n" "#" "来源" "包名" "描述"
+        echo -e "  ${DIM}────────────────────────────────────────────────────────────────────${RESET}"
+
+        local i=0
+        while IFS='|' read -r src name desc; do
+            ((i++))
+            [ "$i" -lt "$start" ] && continue
+            [ "$i" -gt "$end" ] && break
+            local color="$GREEN"
+            local icon="◆"
+            [ "$src" = "snap" ] && color="$YELLOW" && icon="●"
+            [ "$src" = "flatpak" ] && color="$CYAN" && icon="▲"
+            local desc_short="${desc:0:40}"
+            [ ${#desc} -gt 40 ] && desc_short="${desc_short}..."
+            printf "  ${DIM}%3d${RESET}  ${color}%-8s${RESET} ${BOLD}%-25s${RESET} ${DIM}%s${RESET}\n" "$i" "$src" "$name" "$desc_short"
+        done < "$tmpfile"
+
+        echo -e "  ${DIM}────────────────────────────────────────────────────────────────────${RESET}"
+        echo -e "  ${DIM}第 ${page}/${total_pages} 页  共 ${total} 条${RESET}"
+    }
+
+    while true; do
+        show_page $current_page
+        echo ""
+        echo -e "  ${GREEN}n${RESET}=下一页 ${GREEN}p${RESET}=上一页 ${GREEN}数字${RESET}=安装 ${RED}q${RESET}=返回"
+        echo -ne "  ${BOLD}❯${RESET} "
+        read -r input
+
+        case "$input" in
+            n|N)
+                [ "$current_page" -lt "$total_pages" ] && ((current_page++))
+                clear_screen
+                echo -e "  ${BOLD}搜索: ${keyword}${RESET}  ${DIM}(共 ${total} 条)${RESET}"
+                ;;
+            p|P)
+                [ "$current_page" -gt 1 ] && ((current_page--))
+                clear_screen
+                echo -e "  ${BOLD}搜索: ${keyword}${RESET}  ${DIM}(共 ${total} 条)${RESET}"
+                ;;
+            q|Q|"")
+                break
+                ;;
+            *)
+                if [[ "$input" =~ ^[0-9]+$ ]] && [ "$input" -ge 1 ] && [ "$input" -le "$total" ]; then
+                    local line=$(sed -n "${input}p" "$tmpfile")
+                    local pkg_name=$(echo "$line" | cut -d'|' -f2)
+                    local pkg_src=$(echo "$line" | cut -d'|' -f1)
+                    echo ""
+                    echo -e "  安装 ${BOLD}${pkg_name}${RESET} (${pkg_src})?"
+                    echo -ne "  确认? ${YELLOW}[y/N]${RESET} "
+                    read -r confirm
+                    if [ "$confirm" = "y" ]; then
+                        case "$pkg_src" in
+                            apt) sudo apt install -y "$pkg_name" ;;
+                            snap) sudo snap install "$pkg_name" ;;
+                            flatpak) sudo flatpak install -y flathub "$pkg_name" ;;
+                        esac
+                    fi
+                    echo ""
+                else
+                    echo -e "  ${RED}无效输入${RESET}"
+                fi
+                ;;
+        esac
     done
 
-    echo -e "  ${DIM}────────────────────────────────────────────────────────────────────${RESET}"
+    rm -f "$tmpfile"
 }
 
 test_mirrors() {
