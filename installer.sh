@@ -37,7 +37,7 @@ pad() {
     local w=0
     for (( i=0; i<${#s}; i++ )); do
         local c="${s:$i:1}"
-        if [[ "$c" =~ [一-鿿] ]]; then
+        if LC_ALL=C grep -qP '[^\x00-\x7F]' <<< "$c"; then
             ((w+=2))
         else
             ((w+=1))
