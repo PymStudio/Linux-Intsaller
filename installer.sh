@@ -331,10 +331,11 @@ one_click_setup() {
         "3|Python 开发|python3 python3-pip python3-venv||"
         "4|Node.js 开发|nodejs npm||"
         "5|C/C++ 开发|gcc g++ gdb cmake make||"
-        "6|Docker|docker.io|docker|"
-        "7|浏览器|||org.mozilla.firefox com.google.Chrome"
-        "8|办公套件||libreoffice|"
-        "9|多媒体|vlc ffmpeg|vlc|"
+        "6|Rust|||rustup"
+        "7|Docker|docker.io|docker|"
+        "8|浏览器|||org.mozilla.firefox com.google.Chrome"
+        "9|办公套件||libreoffice|"
+        "10|多媒体|vlc ffmpeg|vlc|"
         "0|全部安装|||"
     )
 
@@ -406,6 +407,12 @@ one_click_setup() {
             [ -z "$pkg" ] && continue
             sudo flatpak install -y flathub "$pkg" 2>/dev/null && echo -e "  ${CYAN}  ✓ ${pkg}${RESET}" || echo -e "  ${RED}  ✗ ${pkg}${RESET}"
         done
+    fi
+
+    if [ "$name" = "Rust" ]; then
+        echo -e "  ${YELLOW}▸ 安装 Rust...${RESET}"
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y 2>/dev/null && echo -e "  ${YELLOW}  ✓ rustup 安装完成${RESET}" || echo -e "  ${RED}  ✗ rustup 安装失败${RESET}"
+        echo -e "  ${DIM}  运行 source ~/.cargo/env 加载环境${RESET}"
     fi
 
     echo -e "\n  ${GREEN}${BOLD}✓ ${name} 安装完成${RESET}"
