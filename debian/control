@@ -1,0 +1,15 @@
+Source: linux-installer
+Section: utils
+Priority: optional
+Maintainer: PymStudio <13197354683@163.com>
+Build-Depends: debhelper (>= 10)
+Standards-Version: 4.1.2
+Homepage: https://github.com/PymStudio/Linux-Intsaller
+
+Package: linux-installer
+Architecture: all
+Depends: bash, curl, coreutils
+Recommends: apt, snapd, flatpak
+Description: Ubuntu/Debian 软件安装器
+  支持 apt/snap/flatpak 搜索安装，镜像测速换源，
+  一键装机，本地包安装（deb/rpm/AppImage/exe），Wine 支持。
