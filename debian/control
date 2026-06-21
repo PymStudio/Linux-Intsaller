@@ -2,14 +2,22 @@ Source: linux-installer
 Section: utils
 Priority: optional
 Maintainer: PymStudio <13197354683@163.com>
-Build-Depends: debhelper (>= 10)
+Build-Depends: debhelper (>= 10), dh-exec
 Standards-Version: 4.1.2
-Homepage: https://github.com/PymStudio/Linux-Intsaller
+Homepage: https://github.com/PymStudio/Linux-Installer
+Rules-Requires-Root: no
 
 Package: linux-installer
 Architecture: all
-Depends: bash, curl, coreutils
+Depends: bash (>= 4.0), curl, coreutils
 Recommends: apt, snapd, flatpak
 Description: Ubuntu/Debian 软件安装器
-  支持 apt/snap/flatpak 搜索安装，镜像测速换源，
-  一键装机，本地包安装（deb/rpm/AppImage/exe），Wine 支持。
+ Linux Installer 是一个终端软件安装器，支持：
+ .
+  * 搜索 apt/snap/flatpak 三个源
+  * 镜像测速和一键换源
+  * 一键装机（Python/Node/Rust/Docker 等）
+  * 本地包安装（.deb/.rpm/.AppImage/.exe）
+  * Wine 支持运行 Windows 程序
+ .
+ 双击 .deb/.AppImage 文件可直接调用安装。

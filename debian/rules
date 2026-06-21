@@ -1,0 +1,20 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	@echo "Nothing to build"
+
+override_dh_auto_install:
+	mkdir -p debian/linux-installer/usr/bin
+	mkdir -p debian/linux-installer/usr/share/linux-installer
+	mkdir -p debian/linux-installer/usr/share/applications
+	mkdir -p debian/linux-installer/usr/share/mime/packages
+	install -m 755 installer.sh debian/linux-installer/usr/bin/linux-installer
+	install -m 644 main.py debian/linux-installer/usr/share/linux-installer/
+	install -m 644 requirements.txt debian/linux-installer/usr/share/linux-installer/
+	install -m 644 x-appimage.xml debian/linux-installer/usr/share/mime/packages/
+
+override_dh_install:
+	dh_install --sourcedir=debian/linux-installer

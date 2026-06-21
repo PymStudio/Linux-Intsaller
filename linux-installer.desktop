@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Linux Installer
 Comment=Ubuntu/Debian 软件安装器
-Exec=/home/victor-pym/文档/Project/INSTALLER/installer.sh %f
+Exec=/usr/bin/linux-installer %f
 Icon=linux-installer
 Terminal=true
 Type=Application

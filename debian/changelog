@@ -1,0 +1,10 @@
+linux-installer (0.1-1) unstable; urgency=medium
+
+  * 初始版本
+  * 支持 apt/snap/flatpak 搜索
+  * 镜像测速和一键换源
+  * 一键装机（Python/Node/Rust/Docker）
+  * 本地包安装（deb/rpm/AppImage/exe）
+  * MIME 类型关联（双击打开安装）
+
+ -- PymStudio <13197354683@163.com>  Mon, 16 Jun 2026 12:00:00 +0800
